@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>کارنامه سفر آرمان</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<header class="questions-header">
+    <a href="/" class="back-home">صفحه اصلی</a>
+    <h1>کارنامه سفر علمی آرمان</h1>
+    <p>نتیجهٔ ماجراجویی فیزیکی تو</p>
+</header>
+
+<main class="questions-container">
+
+    <section class="result-summary">
+        <h2>نتیجه نهایی آزمون</h2>
+
+        <div class="result-percentage">
+            {{ percentage }}٪
+        </div>
+
+        <p>
+            پاسخ‌های درست:
+            <strong>{{ correct_count }}</strong>
+            از
+            <strong>{{ total_questions }}</strong>
+        </p>
+
+        <p class="result-message">{{ message }}</p>
+    </section>
+
+    <h2 class="result-section-title">بررسی پاسخ‌ها</h2>
+
+    {% for item in results %}
+    {% set q = item.question %}
+
+    <section class="question-card result-card">
+
+        <div class="question-number">
+            ایستگاه {{ loop.index }}
+        </div>
+
+        <h2>{{ q.title }}</h2>
+
+        <div class="question-text">{{ q.text }}</div>
+
+        {% if item.is_excluded %}
+
+            <p class="question-note">
+                این سؤال در محاسبه درصد نهایی تأثیر ندارد.
+            </p>
+
+        {% elif item.is_correct %}
+
+            <p class="result-correct">✓ پاسخ شما درست است.</p>
+
+        {% else %}
+
+            <p class="result-wrong">✗ پاسخ شما نادرست یا بی‌پاسخ است.</p>
+
+        {% endif %}
+
+        {% if item.selected_option is not none and q.options %}
+            <p>
+                پاسخ انتخاب‌شده:
+                <strong>
+                    {{ q.options[item.selected_option - 1] }}
+                </strong>
+            </p>
+        {% elif not item.is_excluded %}
+            <p>پاسخی برای این سؤال ثبت نشده است.</p>
+        {% endif %}
+
+        {% if q.correct_index is not none and q.options and not item.is_excluded %}
+            <p>
+                پاسخ صحیح:
+                <strong>{{ q.options[q.correct_index] }}</strong>
+            </p>
+        {% endif %}
+
+        <button
+            type="button"
+            class="submit-answer"
+            onclick="toggleAnswer('answer-{{ q.id }}', this)">
+            نمایش پاسخ‌نامه تشریحی
+        </button>
+
+        <div id="answer-{{ q.id }}" class="answer-image-container"
+             style="display:none; margin-top:20px;">
+
+            <img
+                src="{{ url_for('static', filename='images/answers/answer' ~ q.id ~ '.jpg') }}"
+                alt="پاسخ‌نامه تشریحی سؤال {{ q.id }}"
+                style="max-width:100%; height:auto;"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+            >
+
+            <p style="display:none;">
+                تصویر پاسخ‌نامه این سؤال هنوز بارگذاری نشده است.
+            </p>
+
+        </div>
+
+    </section>
+
+    {% endfor %}
+
+    <div class="result-actions">
+        <a href="{{ url_for('home') }}" class="submit-answer">
+            بازگشت به صفحه اصلی
+        </a>
+    </div>
+
+</main>
+
+<footer class="questions-footer">
+    <p>فیزیک، زبان پنهان جهان است.</p>
+    <p>گروه سازندگان پروژه | فرزانگان ۳</p>
+</footer>
+
+<script>
+function toggleAnswer(id, button) {
+    const box = document.getElementById(id);
+
+    if (box.style.display === "none") {
+        box.style.display = "block";
+        button.textContent = "بستن پاسخ‌نامه";
+    } else {
+        box.style.display = "none";
+        button.textContent = "نمایش پاسخ‌نامه تشریحی";
+    }
+}
+</script>
+
+</body>
+</html>
