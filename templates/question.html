@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سؤالات سفر آرمان | فیزیک</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<header class="questions-header">
+    <a href="/" class="back-home">صفحه اصلی</a>
+    <h1>ماجراجویی علمی آرمان</h1>
+    <p>در مسیر سفر، فیزیک را کشف کن!</p>
+</header>
+
+<main class="questions-container">
+
+    <div class="questions-intro">
+        <h2>ایستگاه‌های علمی سفر</h2>
+        <p>در هر ایستگاه با یک چالش فیزیکی روبه‌رو می‌شوی.</p>
+    </div>
+
+    <div class="exam-notice">
+        <strong>توجه:</strong>
+        برای ثبت نهایی آزمون، باید به تمام سؤال‌ها پاسخ بدهی.
+        پیش از ثبت نهایی، پاسخ‌های خود را بررسی کن.
+        در صورت پایان زمان، آزمون به‌صورت خودکار ثبت می‌شود.
+    </div>
+
+    <div class="exam-status">
+        <div class="timer-box">
+            <span>زمان باقی‌مانده</span>
+            <strong id="timer">۷۵:۰۰</strong>
+        </div>
+
+        <div class="attempt-box">
+            <span>تعداد دفعات شرکت</span>
+            <strong id="attempt-count">۱</strong>
+        </div>
+    </div>
+
+    <form id="exam-form" action="{{ url_for('submit') }}" method="POST">
+
+        {% for q in questions %}
+
+        <section class="question-card" id="question-{{ q.id }}">
+
+            <div class="question-number">
+                ایستگاه {{ loop.index }}
+            </div>
+
+            <h2>{{ q.title }}</h2>
+
+            {% if q.topic %}
+            <span class="question-topic">{{ q.topic }}</span>
+            {% endif %}
+
+            {% if q.story %}
+            <div class="question-story">{{ q.story }}</div>
+            {% endif %}
+
+            <div class="question-text">{{ q.text }}</div>
+
+            {% if q.options %}
+            <div class="options-container">
+                <h3>گزینه موردنظر خود را انتخاب کن:</h3>
+
+                {% for option in q.options %}
+                <label class="option-item">
+                    <input
+                        type="radio"
+                        name="answer_{{ q.id }}"
+                        value="{{ loop.index }}"
+                        required
+                    >
+
+                    <span dir="ltr"
+                          style="display:inline-block; unicode-bidi:isolate;">
+                        {{ option }}
+                    </span>
+                </label>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if q.answer_mode == "reveal_only" %}
+            <p class="question-note">
+                این سؤال در محاسبه درصد نهایی تأثیر ندارد.
+            </p>
+            {% endif %}
+
+            {% if q.note %}
+            <div class="question-note">{{ q.note }}</div>
+            {% endif %}
+
+        </section>
+
+        {% endfor %}
+
+        <button type="submit" class="submit-answer" id="final-submit">
+            ثبت نهایی آزمون
+        </button>
+
+    </form>
+
+</main>
+
+<footer class="questions-footer">
+    <p>فیزیک، زبان پنهان جهان است.</p>
+    <p>گروه سازندگان پروژه | فرزانگان ۳</p>
+</footer>
+
+<script>
+(function () {
+    const form = document.getElementById("exam-form");
+    const timerDisplay = document.getElementById("timer");
+    const attemptDisplay = document.getElementById("attempt-count");
+
+    const DURATION = 75 * 60 * 1000;
+
+    const deadlineKey = "arman_exam_deadline";
+    const attemptKey = "arman_exam_attempts";
+    const answersKey = "arman_exam_answers";
+
+    let deadline = Number(localStorage.getItem(deadlineKey));
+
+    // شروع آزمون جدید یا ادامه آزمون قبلی
+    if (!deadline || deadline <= Date.now()) {
+        deadline = Date.now() + DURATION;
+        localStorage.setItem(deadlineKey, String(deadline));
+
+        const attempts =
+            Number(localStorage.getItem(attemptKey) || 0) + 1;
+
+        localStorage.setItem(attemptKey, String(attempts));
+    }
+
+    attemptDisplay.textContent =
+        localStorage.getItem(attemptKey) || "۱";
+
+    // بازیابی پاسخ‌های قبلی
+    const savedAnswers = JSON.parse(
+        localStorage.getItem(answersKey) || "{}"
+    );
+
+    Object.entries(savedAnswers).forEach(([name, value]) => {
+        const input = form.querySelector(
+            `input[name="${name}"][value="${value}"]`
+        );
+
+        if (input) {
+            input.checked = true;
+        }
+    });
+
+    // ذخیره پاسخ با هر انتخاب
+    form.addEventListener("change", function (event) {
+        if (event.target.type === "radio") {
+            const answers = JSON.parse(
+                localStorage.getItem(answersKey) || "{}"
+            );
+
+            answers[event.target.name] = event.target.value;
+
+            localStorage.setItem(
+                answersKey,
+                JSON.stringify(answers)
+            );
+        }
+    });
+
+    function toPersianDigits(number) {
+        return String(number).replace(/\d/g, digit =>
+            "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]
+        );
+    }
+
+    function updateTimer() {
+        const remaining = Math.max(0, deadline - Date.now());
+
+        const totalSeconds = Math.ceil(remaining / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        timerDisplay.textContent =
+            toPersianDigits(
+                String(minutes).padStart(2, "0") + ":" +
+                String(seconds).padStart(2, "0")
+            );
+
+        if (remaining <= 0) {
+            clearInterval(timerInterval);
+            timerDisplay.textContent = "۰۰:۰۰";
+
+            // ثبت خودکار؛ پاسخ‌های خالی هم در سمت سرور غلط حساب می‌شوند.
+            form.submit();
+        }
+    }
+
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
+
+    // جلوگیری از ارسال دوباره فرم
+    form.addEventListener("submit", function () {
+        clearInterval(timerInterval);
+
+        const button = document.getElementById("final-submit");
+        button.disabled = true;
+        button.textContent = "در حال ثبت آزمون...";
+
+        localStorage.removeItem(deadlineKey);
+        localStorage.removeItem(answersKey);
+    });
+
+})();
+</script>
+
+</body>
+</html>
